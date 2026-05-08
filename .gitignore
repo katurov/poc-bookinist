@@ -1,0 +1,11 @@
+.DS_Store
+__pycache__/
+venv/
+.env
+*.pyc
+*.pkl
+tx_debug.json
+tx_latest_parsed.json
+tx_manifest.json
+tx_manifest_parsed.json
+all_sigs.json
