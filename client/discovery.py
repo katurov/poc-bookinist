@@ -29,51 +29,60 @@ REGISTRY_PUBKEY = Pubkey.from_string(REGISTRY_PUBKEY_STR)
 client = Client(SOLANA_RPC_URL)
 
 def find_data_providers_by_tag(target_tag: str, limit: int = 20) -> List[dict]:
-    # Temporary storage to keep track of the latest manifest per agent name
+    """
+    Finds agents by tag. 
+    NOTE: Scanning RPC logs is slow and doesn't scale. 
+    TODO: Integrate with an indexer (Helius/Shyft) or a custom Program with PDA for O(1) discovery.
+    """
     latest_providers = {}
     
-    # 2. Request the latest transactions for our registry address
     try:
+        # 1. Get signatures (this is fast)
         sig_response = client.get_signatures_for_address(REGISTRY_PUBKEY, limit=limit)
     except Exception as e:
+        print(f"Error fetching signatures: {e}")
         return []
     
     if not sig_response.value:
         return []
 
-    # 3. Iterate through each transaction and extract details
+    # 2. Extract signatures for batch processing or sequential fetch
+    # Optimization: Filter out transactions without memo if possible (not easy with standard getSignatures)
+    
     for sig_info in sig_response.value:
         try:
+            # Skip if we already have a more recent version of something and this is older 
+            # (though we don't know the agent name yet, we can't fully optimize here without an indexer)
+            
             tx = client.get_transaction(
                 sig_info.signature, 
-                max_supported_transaction_version=0
+                max_supported_transaction_version=0,
+                encoding="jsonParsed" # Use jsonParsed for easier memo extraction
             )
             
-            if not tx.value or not tx.value.transaction.meta:
+            if not tx.value or not tx.value.transaction:
                 continue
                 
-            # Get block time (timestamp)
             timestamp = tx.value.block_time
             date_str = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S') if timestamp else "Unknown"
 
-            logs = tx.value.transaction.meta.log_messages
-            if not logs:
-                continue
+            # Search instructions for Memo
+            instructions = tx.value.transaction.transaction.message.instructions
+            for ix in instructions:
+                # Standard Solana JSON parsing for Instructions
+                ix_dict = json.loads(ix.to_json())
+                program_id = ix_dict.get('programId')
                 
-            for log in logs:
-                if "Program log: Memo" in log:
+                # Check for Memo Program
+                if program_id == "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr":
+                    memo_text = ix_dict.get('parsed')
+                    if not memo_text: continue
+                    
                     try:
-                        if "): " in log:
-                            json_str = log.split('): ')[1]
-                            if json_str.startswith('"') and json_str.endswith('"'):
-                                try: json_str = json.loads(json_str)
-                                except: pass
-                        else: continue
-                        
-                        manifest = AgentManifest.model_validate_json(json_str)
+                        # Validate using our shared core model
+                        manifest = AgentManifest.model_validate_json(memo_text)
                         
                         if target_tag.lower() in [tag.lower() for tag in manifest.tags]:
-                            # Only keep the latest one for each unique agent name
                             name = manifest.agent_name
                             if name not in latest_providers or timestamp > latest_providers[name]['timestamp']:
                                 latest_providers[name] = {
@@ -81,13 +90,11 @@ def find_data_providers_by_tag(target_tag: str, limit: int = 20) -> List[dict]:
                                     "timestamp": timestamp or 0,
                                     "date": date_str
                                 }
-                            
-                    except (IndexError, ValidationError, json.JSONDecodeError):
+                    except (ValidationError, json.JSONDecodeError):
                         continue
         except Exception as e:
             continue
     
-    # Convert dict to list and sort by timestamp descending
     result = list(latest_providers.values())
     result.sort(key=lambda x: x['timestamp'], reverse=True)
     return result
