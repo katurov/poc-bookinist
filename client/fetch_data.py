@@ -9,7 +9,10 @@ from dotenv import load_dotenv
 
 from solders.keypair import Keypair
 from x402 import x402Client, parse_payment_required
-from client.schemes import NativeSolSvmScheme
+try:
+    from client.schemes import NativeSolSvmScheme
+except ImportError:
+    from schemes import NativeSolSvmScheme
 
 # Load environment variables
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -107,7 +110,15 @@ async def fetch_data(base_url, query, signature_payload=None, depth=0):
                     
                     print("✍️  Generating x402 payment payload...")
                     payload = await x402_client.create_payment_payload(payment_required)
-                    payload_base64 = base64.b64encode(payload.model_dump_json().encode()).decode()
+                    
+                    # If payload is already a dict (from our custom scheme), we need to handle it.
+                    # But x402Client usually wraps it in a model.
+                    if hasattr(payload, "model_dump_json"):
+                        payload_json = payload.model_dump_json()
+                    else:
+                        payload_json = json.dumps(payload)
+                        
+                    payload_base64 = base64.b64encode(payload_json.encode()).decode()
                     
                     return await fetch_data(base_url, query, signature_payload=payload_base64, depth=depth+1)
                 except Exception as e:

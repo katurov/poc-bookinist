@@ -23,12 +23,13 @@ class NativeSolSvmScheme(ExactSvmClientScheme):
     without monkey-patching the base library.
     """
     
-    async def create_payment_payload(self, requirements: Any) -> Dict[str, str]:
+    def create_payment_payload(self, requirements: Any) -> Dict[str, str]:
         mint = str(requirements.asset)
         
         # If it's not native SOL, fall back to the standard implementation
         if mint != SYSTEM_PROGRAM_ADDRESS:
-            return await super().create_payment_payload(requirements)
+            # Note: super().create_payment_payload in x402 2.5.0 is likely sync
+            return super().create_payment_payload(requirements)
 
         # Handle Native SOL logic
         network = str(requirements.network)
