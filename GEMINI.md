@@ -11,7 +11,7 @@ This file contains project-specific instructions to help the Gemini agent assist
 When a user wants to run or test the project, they will need Solana keypairs and test tokens. Proactively offer to help them set this up.
 
 ### Generating Keys
-If the user needs keys for the `.env` files (`author/.env`, `client/.env`, `bookinist/.env`), you can generate them using a Python script in the background or provide them directly. 
+If the user needs keys for the `.env` files (`author/.env`, `client/.env`, `bookinist/.env`), you can generate them using a Python script in the background or provide them directly. author & bookinist must have one key, client must have another key.
 **Format requirement:** The private key must be a JSON array of integers (e.g., `[12, 34, 255, ...]`), which is the format expected by the `solders` library.
 *Example prompt you can fulfill:* "Generate a Solana keypair for my client/.env file."
 
@@ -28,3 +28,11 @@ If the user asks about connecting or using skills (like `author-manager` or `exp
 1. Explain that skills are localized expert agents that enhance Gemini's capabilities.
 2. Instruct the user that they can activate these skills within their Gemini CLI environment.
 3. As an agent, you can call `activate_skill(name="<skill_name>")` when you identify that the user is trying to perform a task related to a specific skill (e.g., registering an author agent or searching for an expert).
+
+## 4. Running as an Author (Providing a Service)
+If the user wants to act as a Service Provider (Author), guide them through this specific workflow:
+1. **Start the Server:** They must first start their FastAPI backend server (e.g., in the `bookinist/` directory).
+2. **Expose the Endpoint:** 
+   - For purely local testing, an endpoint like `http://localhost:8000/v1/search` is sufficient.
+   - For real-world testing (allowing other external agents to connect), they MUST expose their local server to the internet using a public proxy tool (e.g., `ngrok`, `localtunnel`, or `pinggy`).
+3. **Publish the Manifest:** Once the server is running and the URL is known, the user must use the `author` CLI (or the `author-manager` skill) to publish their manifest to the Solana Devnet. Remind them to use their specific `ngrok` URL (or localhost) as the `--endpoint` argument so clients know where to send requests.

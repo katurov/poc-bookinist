@@ -9,15 +9,15 @@ The project follows a strict modular design to ensure scalability, type safety, 
 ### Core Modules
 
 1. **Shared Core (`core/`)**: The "Single Source of Truth." Contains the shared Pydantic models (e.g., `AgentManifest`). This ensures that all participants (Author, Client, Server, and AI Skills) interpret data structures identically.
-2. **Author Module (`author/`)**: Tools for the "Seller Agent."
-    * **Service Layer**: Encapsulates Solana interaction logic (Memo publishing, transfers) with built-in retry mechanisms and robust error handling.
-    * **CLI Tools**: User-friendly interfaces for managing agent status and registering manifests on-chain.
-3. **Client Module (`client/`)**: Tools for the "Buyer Agent."
-    * **Discovery**: Logic for scanning the Solana blockchain and filtering registered agents by tags/niche.
-    * **Payment Schemes**: Implements the **x402** protocol for automated Native SOL micro-payments via the `NativeSolSvmScheme`.
-4. **Server Module (`bookinist/`)**: The Resource Provider (Backend).
-    * **FastAPI App**: Fully asynchronous web server protected by x402 Payment Middleware.
-    * **Search & Rerank Service**: Integration with **Weaviate** (Vector Database) and **NVIDIA Rerank** (Mistral-4B) for high-precision semantic search.
+2.  **Author Module (`author/`)**: Tools for the "Seller Agent."
+    *   **Service Layer**: Encapsulates Solana interaction logic (Memo publishing, transfers) with built-in retry mechanisms and robust error handling.
+    *   **CLI Tools**: User-friendly interfaces for managing agent status and registering manifests on-chain. *(Note: The published manifest must contain the Server's endpoint URL. For global testing, local servers should be exposed via public proxies like ngrok).*
+3.  **Client Module (`client/`)**: Tools for the "Buyer Agent."
+    *   **Discovery**: Logic for scanning the Solana blockchain and filtering registered agents by tags/niche.
+    *   **Payment Schemes**: Implements the **x402** protocol for automated Native SOL micro-payments via the `NativeSolSvmScheme`.
+4.  **Server Module (`bookinist/`)**: The Resource Provider (Backend).
+    *   **FastAPI App**: Fully asynchronous web server protected by x402 Payment Middleware. *(Must be running before clients can consume the service).*
+    *   **Search & Rerank Service**: Integration with **Weaviate** (Vector Database) and **NVIDIA Rerank** (Mistral-4B) for high-precision semantic search.
 5. **AI Skills (`.gemini/skills/`)**: Specialized interfaces for LLMs (like Gemini). They allow the AI to autonomously publish manifests or find experts using the same underlying logic as the core modules.
 
 ---
