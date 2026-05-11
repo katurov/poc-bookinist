@@ -1,17 +1,16 @@
 import os
 import json
+import sys
 from typing import List
-from pydantic import BaseModel, HttpUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import HttpUrl
 from dotenv import load_dotenv
 
-from solana.rpc.api import Client
-from solders.keypair import Keypair
-from solders.pubkey import Pubkey
-from solders.instruction import Instruction
-from solders.transaction import Transaction
-from solders.message import Message
-from solders.system_program import transfer, TransferParams
+# Setup paths for importing from core
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from core.models import AgentManifest
+from author.service import AgentRegistryService
 
 # Load environment variables from .env file
 load_dotenv()
@@ -30,26 +29,22 @@ class AppSettings(BaseSettings):
     agent_endpoint: HttpUrl
     agent_description: str
 
-class AgentManifest(BaseModel):
-    agent_name: str
-    niche: str
-    tags: List[str]
-    base_price_usdc: float
-    endpoint: HttpUrl
-    description: str
-
-def get_keypair_from_string(key_str: str) -> Keypair:
+def get_key_data_from_string(key_str: str) -> list:
     try:
         key_data = json.loads(key_str)
         if isinstance(key_data, list):
-            return Keypair.from_bytes(bytes(key_data))
+            return key_data
     except json.JSONDecodeError:
         pass
     raise ValueError("Private key format not recognized. Please use a JSON array of bytes.")
 
 def main():
-    settings = AppSettings()
-    
+    try:
+        settings = AppSettings()
+    except Exception as e:
+        print(f"Error loading settings: {e}")
+        return
+        
     # Prepare Manifest
     manifest = AgentManifest(
         agent_name=settings.agent_name,
@@ -60,49 +55,18 @@ def main():
         description=settings.agent_description
     )
     
-    manifest_json = manifest.model_dump_json()
-    print(f"Prepared Manifest: {manifest_json}")
-
-    # Solana setup
-    client = Client(settings.solana_rpc_url)
     try:
-        my_keypair = get_keypair_from_string(settings.solana_private_key)
+        key_data = get_key_data_from_string(settings.solana_private_key)
     except Exception as e:
-        print(f"Error loading keypair: {e}")
+        print(f"Error loading keypair data: {e}")
         return
 
-    # Official Memo Program ID
-    MEMO_PROGRAM_ID = Pubkey.from_string("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr")
-
-    # 1. Transfer Instruction (0 SOL to registry to make it discoverable)
-    registry_pubkey = Pubkey.from_string(settings.registry_pubkey)
-    transfer_ix = transfer(TransferParams(
-        from_pubkey=my_keypair.pubkey(),
-        to_pubkey=registry_pubkey,
-        lamports=0
-    ))
-
-    # 2. Create Memo Instruction
-    memo_ix = Instruction(
-        program_id=MEMO_PROGRAM_ID,
-        accounts=[],
-        data=manifest_json.encode('utf-8')
-    )
-
-    # Send transaction
     print("Publishing announcement to Solana...")
     try:
-        # Get recent blockhash
-        recent_blockhash = client.get_latest_blockhash().value.blockhash
-
-        # Create message with BOTH instructions
-        # Note: the order of accounts in Message matter.
-        # But Message constructor from instructions usually handles it.
-        msg = Message([transfer_ix, memo_ix], my_keypair.pubkey())
-        txn = Transaction([my_keypair], msg, recent_blockhash)
-
-        response = client.send_transaction(txn)
-        print(f"Success! Transaction Hash: {response.value}")
+        service = AgentRegistryService(settings.solana_rpc_url, key_data)
+        tx_hash = service.publish_manifest(manifest, registry_pubkey=settings.registry_pubkey)
+        if tx_hash:
+            print(f"Success! Transaction Hash: {tx_hash}")
     except Exception as e:
         print(f"Failed to send transaction: {e}")
 

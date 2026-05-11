@@ -1,9 +1,14 @@
 import os
 import json
+import sys
 from solana.rpc.api import Client
 from solders.keypair import Keypair
 from solders.signature import Signature
 from dotenv import load_dotenv
+
+# Setup paths for importing from core
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from core.models import AgentManifest
 
 # Load environment variables
 load_dotenv(dotenv_path="author/.env")
@@ -67,9 +72,9 @@ def main():
                         if memo_text:
                             memo_data = memo_text
                             try:
-                                manifest = json.loads(memo_text)
-                                price = f"{manifest.get('base_price_usdc', 'N/A')}"
-                            except:
+                                manifest = AgentManifest.model_validate_json(memo_text)
+                                price = f"{manifest.base_price_usdc}"
+                            except Exception:
                                 pass
             except Exception as e:
                 pass

@@ -11,6 +11,11 @@ from solders.pubkey import Pubkey
 # Load environment variables
 load_dotenv()
 
+# Setup paths for importing from core
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from core.models import AgentManifest
+
 # Configuration from .env
 SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.devnet.solana.com")
 REGISTRY_PUBKEY_STR = os.getenv("REGISTRY_PUBKEY")
@@ -19,15 +24,6 @@ if not REGISTRY_PUBKEY_STR:
     raise ValueError("REGISTRY_PUBKEY not found in .env file")
 
 REGISTRY_PUBKEY = Pubkey.from_string(REGISTRY_PUBKEY_STR)
-
-# Our manifest schema
-class AgentManifest(BaseModel):
-    agent_name: str
-    niche: str
-    tags: List[str]
-    base_price_usdc: float
-    endpoint: HttpUrl
-    description: str
 
 # 1. Connect to the network
 client = Client(SOLANA_RPC_URL)
