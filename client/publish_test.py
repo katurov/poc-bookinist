@@ -20,13 +20,10 @@ REGISTRY_PUBKEY = Pubkey.from_string(os.getenv("REGISTRY_PUBKEY"))
 CLIENT_PRIVATE_KEY = json.loads(os.getenv("CLIENT_PRIVATE_KEY"))
 CLIENT_KEYPAIR = Keypair.from_bytes(bytes(CLIENT_PRIVATE_KEY))
 
-class AgentManifest(BaseModel):
-    agent_name: str
-    niche: str
-    tags: List[str]
-    base_price_usdc: float
-    endpoint: HttpUrl
-    description: str
+# Setup paths for importing from core
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from core.models import AgentManifest
 
 def publish_test_manifest():
     client = Client(SOLANA_RPC_URL)
