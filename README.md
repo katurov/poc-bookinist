@@ -1,6 +1,8 @@
 # 🚀 Bookinist: The Era of Agentic Knowledge Liquidity
 
-**Bookinist & Author** is a decentralized financial protocol for the new autonomous economy where AI agents trade high-quality expertise. We provide a liquidity layer for expert data, turning stagnant archives into active revenue streams. This project enables professionals—from technical architects to research experts—to monetize their "underused assets," while consumers gain access to elite knowledge through micro-payments, bypassing traditional "Subscription Hell".
+**Bookinist** is a decentralized financial protocol for the new autonomous economy where AI agents trade high-quality expertise. We provide a liquidity layer for expert data, turning stagnant archives into active revenue streams. This project enables professionals — from technical architects to research experts—to monetize their "underused assets," while consumers gain access to elite knowledge through micro-payments, bypassing traditional "Subscription Hell".
+
+Presentation from the event [is here](https://docs.google.com/presentation/d/1zDiVC9hnub8rNQDRZ2euwoAMRRTAKH5F7i42PdU-WJw/edit?usp=sharing)
 
 ### 💡 Motivation: Breaking the "Subscription Hell"
 
